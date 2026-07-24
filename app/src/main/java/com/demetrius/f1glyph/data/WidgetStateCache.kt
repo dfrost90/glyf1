@@ -1,6 +1,8 @@
 package com.demetrius.f1glyph.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -16,27 +18,6 @@ private val Context.dataStore by preferencesDataStore(name = "f1_widget_cache")
  * so the Glyph Toy (which can be redrawn frequently while active) stays cheap.
  */
 class WidgetStateCache(private val context: Context) {
-
-    private object Keys {
-        val GP_NAME = stringPreferencesKey("gp_name")
-        val CIRCUIT = stringPreferencesKey("circuit")
-        val COUNTRY = stringPreferencesKey("country")
-        val ROUND = stringPreferencesKey("round")
-        val SESSION_KIND = stringPreferencesKey("session_kind")
-        val SESSION_EPOCH = longPreferencesKey("session_epoch")
-        val SESSIONS = stringPreferencesKey("sessions")
-        val IS_LIVE = stringPreferencesKey("is_live")
-        val LEADER_LABEL = stringPreferencesKey("leader_label")
-        val FETCHED_AT = longPreferencesKey("fetched_at")
-        val AUTO_GLYPH = booleanPreferencesKey("auto_glyph")
-        val TOP_STANDINGS = stringPreferencesKey("top_standings")
-        val GLYPH_PUSHED = booleanPreferencesKey("glyph_pushed")
-        val SESSION_RESULT_CODE = stringPreferencesKey("result_code")
-        val SESSION_RESULT_LABEL = stringPreferencesKey("result_label")
-        val SESSION_RESULT_EPOCH = longPreferencesKey("result_epoch")
-        val SESSION_RESULT_ROUND = stringPreferencesKey("result_round")
-        val SESSION_RESULT_GP_NAME = stringPreferencesKey("result_gp_name")
-    }
 
     /** Automatic live-session matrix takeover, default ON. */
     suspend fun autoGlyphEnabled(): Boolean =
@@ -59,8 +40,41 @@ class WidgetStateCache(private val context: Context) {
     }
 
     suspend fun save(state: F1WidgetState) {
-        context.dataStore.edit { p ->
-            state.weekend?.let { w ->
+        context.dataStore.edit { writeState(it, state) }
+    }
+
+    suspend fun load(): F1WidgetState = readState(context.dataStore.data.first())
+
+    private object Keys {
+        val GP_NAME = stringPreferencesKey("gp_name")
+        val CIRCUIT = stringPreferencesKey("circuit")
+        val COUNTRY = stringPreferencesKey("country")
+        val ROUND = stringPreferencesKey("round")
+        val SESSION_KIND = stringPreferencesKey("session_kind")
+        val SESSION_EPOCH = longPreferencesKey("session_epoch")
+        val SESSIONS = stringPreferencesKey("sessions")
+        val IS_LIVE = stringPreferencesKey("is_live")
+        val LEADER_LABEL = stringPreferencesKey("leader_label")
+        val FETCHED_AT = longPreferencesKey("fetched_at")
+        val AUTO_GLYPH = booleanPreferencesKey("auto_glyph")
+        val TOP_STANDINGS = stringPreferencesKey("top_standings")
+        val GLYPH_PUSHED = booleanPreferencesKey("glyph_pushed")
+        val SESSION_RESULT_CODE = stringPreferencesKey("result_code")
+        val SESSION_RESULT_LABEL = stringPreferencesKey("result_label")
+        val SESSION_RESULT_EPOCH = longPreferencesKey("result_epoch")
+        val SESSION_RESULT_ROUND = stringPreferencesKey("result_round")
+        val SESSION_RESULT_GP_NAME = stringPreferencesKey("result_gp_name")
+    }
+
+    /**
+     * Pure DataStore mapping, split out from [save] / [load] so it can be
+     * unit-tested against an in-memory [MutablePreferences] without a Context.
+     */
+    companion object {
+
+        fun writeState(p: MutablePreferences, state: F1WidgetState) {
+            val w = state.weekend
+            if (w != null) {
                 p[Keys.GP_NAME] = w.gpName
                 p[Keys.CIRCUIT] = w.circuitName
                 p[Keys.COUNTRY] = w.country
@@ -69,10 +83,27 @@ class WidgetStateCache(private val context: Context) {
                 w.nextSession?.let { s ->
                     p[Keys.SESSION_KIND] = s.kind.name
                     p[Keys.SESSION_EPOCH] = s.epochMillis
+                } ?: run {
+                    p.remove(Keys.SESSION_KIND)
+                    p.remove(Keys.SESSION_EPOCH)
                 }
                 if (w.sessions.isNotEmpty()) {
                     p[Keys.SESSIONS] = SessionsCodec.encode(w.sessions)
+                } else {
+                    p.remove(Keys.SESSIONS)
                 }
+            } else {
+                // No upcoming weekend (e.g. end of season) — drop the stale keys so
+                // the widget stops showing the last Grand Prix. load() rebuilds the
+                // weekend from these, so leaving them would pin it forever.
+                p.remove(Keys.GP_NAME)
+                p.remove(Keys.CIRCUIT)
+                p.remove(Keys.COUNTRY)
+                p.remove(Keys.ROUND)
+                p.remove(Keys.IS_LIVE)
+                p.remove(Keys.SESSION_KIND)
+                p.remove(Keys.SESSION_EPOCH)
+                p.remove(Keys.SESSIONS)
             }
             state.leader?.let { p[Keys.LEADER_LABEL] = it.label }
             if (state.topStandings.isNotEmpty()) {
@@ -93,44 +124,43 @@ class WidgetStateCache(private val context: Context) {
                 p.remove(Keys.SESSION_RESULT_GP_NAME)
             }
         }
-    }
 
-    suspend fun load(): F1WidgetState {
-        val p = context.dataStore.data.first()
-        val kind = p[Keys.SESSION_KIND]?.let { runCatching { SessionKind.valueOf(it) }.getOrNull() }
-        val epoch = p[Keys.SESSION_EPOCH]
-        val nextSession = if (kind != null && epoch != null) UpcomingSession(kind, epoch) else null
-        // Migration: caches written before SESSIONS existed only have the single
-        // nextSession — fall back to it so those renders still show something.
-        val sessions = p[Keys.SESSIONS]?.let { SessionsCodec.decode(it) }
-            ?: listOfNotNull(nextSession)
-        val weekend = p[Keys.GP_NAME]?.let { name ->
-            RaceWeekend(
-                round = p[Keys.ROUND]?.toIntOrNull() ?: 0,
-                gpName = name,
-                circuitName = p[Keys.CIRCUIT].orEmpty(),
-                country = p[Keys.COUNTRY].orEmpty(),
-                nextSession = nextSession,
-                isSessionLiveNow = p[Keys.IS_LIVE]?.toBoolean() ?: false,
-                sessions = sessions
+        fun readState(p: Preferences): F1WidgetState {
+            val kind = p[Keys.SESSION_KIND]?.let { runCatching { SessionKind.valueOf(it) }.getOrNull() }
+            val epoch = p[Keys.SESSION_EPOCH]
+            val nextSession = if (kind != null && epoch != null) UpcomingSession(kind, epoch) else null
+            // Migration: caches written before SESSIONS existed only have the single
+            // nextSession — fall back to it so those renders still show something.
+            val sessions = p[Keys.SESSIONS]?.let { SessionsCodec.decode(it) }
+                ?: listOfNotNull(nextSession)
+            val weekend = p[Keys.GP_NAME]?.let { name ->
+                RaceWeekend(
+                    round = p[Keys.ROUND]?.toIntOrNull() ?: 0,
+                    gpName = name,
+                    circuitName = p[Keys.CIRCUIT].orEmpty(),
+                    country = p[Keys.COUNTRY].orEmpty(),
+                    nextSession = nextSession,
+                    isSessionLiveNow = p[Keys.IS_LIVE]?.toBoolean() ?: false,
+                    sessions = sessions
+                )
+            }
+            val leader = p[Keys.LEADER_LABEL]?.let { LeaderInfo(it) }
+            val topStandings = p[Keys.TOP_STANDINGS]?.let { StandingsCodec.decode(it) }.orEmpty()
+            val todayResult = p[Keys.SESSION_RESULT_CODE]?.let { code ->
+                val label = p[Keys.SESSION_RESULT_LABEL] ?: return@let null
+                val resultEpoch = p[Keys.SESSION_RESULT_EPOCH] ?: return@let null
+                SessionResult(
+                    driverCode = code,
+                    sessionLabel = label,
+                    sessionEpochMillis = resultEpoch,
+                    round = p[Keys.SESSION_RESULT_ROUND]?.toIntOrNull() ?: 0,
+                    gpName = p[Keys.SESSION_RESULT_GP_NAME].orEmpty()
+                )
+            }
+            return F1WidgetState(
+                weekend, leader, p[Keys.FETCHED_AT] ?: 0L, topStandings,
+                todayResult = todayResult
             )
         }
-        val leader = p[Keys.LEADER_LABEL]?.let { LeaderInfo(it) }
-        val topStandings = p[Keys.TOP_STANDINGS]?.let { StandingsCodec.decode(it) }.orEmpty()
-        val todayResult = p[Keys.SESSION_RESULT_CODE]?.let { code ->
-            val label = p[Keys.SESSION_RESULT_LABEL] ?: return@let null
-            val resultEpoch = p[Keys.SESSION_RESULT_EPOCH] ?: return@let null
-            SessionResult(
-                driverCode = code,
-                sessionLabel = label,
-                sessionEpochMillis = resultEpoch,
-                round = p[Keys.SESSION_RESULT_ROUND]?.toIntOrNull() ?: 0,
-                gpName = p[Keys.SESSION_RESULT_GP_NAME].orEmpty()
-            )
-        }
-        return F1WidgetState(
-            weekend, leader, p[Keys.FETCHED_AT] ?: 0L, topStandings,
-            todayResult = todayResult
-        )
     }
 }

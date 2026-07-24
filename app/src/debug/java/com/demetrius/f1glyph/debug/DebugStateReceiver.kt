@@ -90,7 +90,11 @@ class DebugStateReceiver : BroadcastReceiver() {
                     SessionResult(winner, "Q3", now - 4 * hour, 11, "Hungarian Grand Prix")
                 )
             }
-            "nodata" -> state(null)
+            // Genuine pre-first-fetch state: nothing cached at all.
+            "nodata" -> F1WidgetState(
+                weekend = null, leader = null, fetchedAtMillis = now,
+                topStandings = emptyList(), todayResult = null
+            )
             else /* upcoming */ -> {
                 val fp2 = UpcomingSession(SessionKind.FP2, now + 2 * day)
                 state(weekend(fp2, live = false, listOf(fp2)))

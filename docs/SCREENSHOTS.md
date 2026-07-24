@@ -50,10 +50,14 @@ differ by theme. Captured the wide set in light mode by toggling
 
 Compact light variants can be added the same way if wanted.
 
-## Optional / edge states
+## Edge state — ✅ done
 
-- [ ] `widget-nodata.png` — dot-matrix fallback before the first data fetch
-      (`NO DATA` / `SCHEDULE TBC`). Inject with the `nodata` scenario below.
+- [x] `widget-nodata.png` (wide) / `widget-nodata-compact.png` — the genuine
+      pre-first-fetch state: `F1 — no data yet` / `NO DATA` with the dot-matrix
+      fallback art and no standings. Captured by *clearing* the cache (not just
+      injecting) — see below, because `save()` deliberately keeps the last-known
+      standings across transient fetch failures, so an empty inject alone leaves
+      them on screen.
 
 ## How these were captured
 
@@ -74,5 +78,21 @@ Then screencap and crop to the widget bounds (found via
     magick /tmp/s.png -crop 505x505+92+196   +repage widget-compact-*.png
     magick /tmp/s.png -crop 1075x505+92+766  +repage widget-wide-*.png
 
-Trigger a normal refresh afterwards to restore live data:
-`adb shell am broadcast -a com.demetrius.f1glyph.ACTION_MANUAL_REFRESH -n com.demetrius.f1glyph/.widget.F1WidgetProvider`
+The `nodata` scenario needs the cache emptied first (a background refresh may
+have repopulated standings, which `save()` keeps on purpose). Force-stop, delete
+the DataStore, then inject — all within a tight window so no refresh lands in
+between:
+
+    adb shell am force-stop com.demetrius.f1glyph
+    adb shell run-as com.demetrius.f1glyph rm -f files/datastore/f1_widget_cache.preferences_pb
+    adb shell am broadcast -a com.demetrius.f1glyph.DEBUG_INJECT --es scenario nodata \
+      -n com.demetrius.f1glyph/.debug.DebugStateReceiver
+
+(You can't just send `android.appwidget.action.APPWIDGET_UPDATE` from adb — it's
+a protected broadcast — so the debug receiver's `renderAll` is the render path.)
+
+Restore live data afterwards by **tapping the widget** (its refresh
+PendingIntent runs in the foreground and bypasses Nothing OS's background
+freezer, which a plain `am broadcast … ACTION_MANUAL_REFRESH` does not):
+
+    adb shell input tap 629 1018
