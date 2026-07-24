@@ -57,6 +57,13 @@ time + standings), during it (`LIVE` + dot-matrix car art), and after
 |:---:|:---:|:---:|
 | ![Upcoming](docs/images/widget-compact-upcoming.png) | ![Live](docs/images/widget-compact-live.png) | ![Finished](docs/images/widget-compact-finished.png) |
 
+The bitmap text and dot-matrix art follow the system theme — here the wide
+widget in **light mode**:
+
+| Upcoming | Live | Finished |
+|:---:|:---:|:---:|
+| ![Upcoming, light](docs/images/widget-wide-upcoming-light.png) | ![Live, light](docs/images/widget-wide-live-light.png) | ![Finished, light](docs/images/widget-wide-finished-light.png) |
+
 ## Build & install
 
 You need Android Studio (or the Android SDK + JDK 17) and a Nothing phone

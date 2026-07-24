@@ -38,6 +38,18 @@ Wide (4×2, ≥ 180dp):
 - [x] `widget-wide-live.png` — `LIVE` + session-labelled car art (`RACE`, …).
 - [x] `widget-wide-finished.png` — `FINISHED` + winner row + trophy art.
 
+## Light theme — ✅ done (wide)
+
+The widget picks `WidgetPalette.LIGHT`/`DARK` from the system UI mode, so shots
+differ by theme. Captured the wide set in light mode by toggling
+`adb shell cmd uimode night no` (restore with `night yes`):
+
+- [x] `widget-wide-upcoming-light.png`
+- [x] `widget-wide-live-light.png`
+- [x] `widget-wide-finished-light.png`
+
+Compact light variants can be added the same way if wanted.
+
 ## Optional / edge states
 
 - [ ] `widget-nodata.png` — dot-matrix fallback before the first data fetch
