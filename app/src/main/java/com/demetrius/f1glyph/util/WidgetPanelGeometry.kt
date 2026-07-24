@@ -30,6 +30,6 @@ object WidgetPanelGeometry {
         val weighted = (minWidthDp - 2 * PADDING_DP - 1).toFloat()  // subtract padding + divider
         val w = (weighted / 2.1f - 16f).coerceAtLeast(40f)           // weight 1/2.1, minus marginStart
         val h = (maxHeightDp - 2 * PADDING_DP).coerceAtLeast(40).toFloat()
-        return (w / h).coerceIn(0.5f, 5f)
+        return (w / h).coerceIn(0.8f, 5f)
     }
 }
