@@ -41,17 +41,25 @@ screen-captured. Regenerate with `python3 tools/render_matrix.py`.</sub>
 
 ## Home-screen widget
 
-<!-- Real device screenshots — drop PNGs into docs/images/ with these names:
-     widget-upcoming.png · widget-countdown.png · widget-live.png · widget-wide.png
-     then uncomment the table below. -->
+<!-- Real device screenshots — capture per docs/SCREENSHOTS.md, drop PNGs into
+     docs/images/, then uncomment the tables below. -->
 <!--
-| Upcoming | Countdown (last 10 min) | Live | Standings (4×2) |
+Compact (2×2):
+
+| Upcoming | Countdown | Live | Finished |
 |:---:|:---:|:---:|:---:|
-| ![](docs/images/widget-upcoming.png) | ![](docs/images/widget-countdown.png) | ![](docs/images/widget-live.png) | ![](docs/images/widget-wide.png) |
+| ![](docs/images/widget-compact-upcoming.png) | ![](docs/images/widget-compact-countdown.png) | ![](docs/images/widget-compact-live.png) | ![](docs/images/widget-compact-finished.png) |
+
+Wide (4×2):
+
+| Upcoming | Countdown | Live | Finished |
+|:---:|:---:|:---:|:---:|
+| ![](docs/images/widget-wide-upcoming.png) | ![](docs/images/widget-wide-countdown.png) | ![](docs/images/widget-wide-live.png) | ![](docs/images/widget-wide-finished.png) |
 -->
 
-_Screenshots coming — captured on device as sessions roll through a race
-weekend._
+_Widget screenshots coming — captured on device as sessions roll through a
+race weekend. See [`docs/SCREENSHOTS.md`](docs/SCREENSHOTS.md) for the full
+checklist._
 
 ## Build & install
 
