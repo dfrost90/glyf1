@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:padding="20dp">
+
+    <!-- All text is bitmap-rendered (Nothing fonts don't load in
+         RemoteViews TextViews). -->
+    <ImageView
+        android:id="@+id/header_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scaleType="fitStart"
+        android:contentDescription="@string/widget_label" />
+
+    <!-- Timer row in Ndot: event date-time, last-10-min countdown, or live
+         elapsed time. -->
+    <ImageView
+        android:id="@+id/event_time_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:scaleType="fitStart"
+        android:contentDescription="@string/widget_label" />
+
+    <ImageView
+        android:id="@+id/caption_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:scaleType="fitStart"
+        android:contentDescription="@string/widget_label" />
+
+    <!-- Standings table (or matrix fallback) fills remaining space -->
+    <ImageView
+        android:id="@+id/info_panel"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:scaleType="fitEnd"
+        android:contentDescription="@string/glyph_toy_label" />
+
+</LinearLayout>

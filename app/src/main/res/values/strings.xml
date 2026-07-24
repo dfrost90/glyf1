@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Glyf1</string>
+    <string name="widget_label">Glyf1 Widget</string>
+    <string name="widget_label_wide">Glyf1 Widget (Wide)</string>
+    <string name="glyph_toy_label">Glyf1</string>
+    <string name="glyph_toy_summary">Next session countdown and leader on the Glyph Matrix</string>
+    <string name="tile_label">Glyf1</string>
+    <string name="tile_on_subtitle">Next event + live</string>
+    <string name="tile_off_subtitle">Off</string>
+</resources>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@drawable/widget_background"
+    android:padding="20dp">
+
+    <!-- LEFT: upcoming GP info. All text is bitmap-rendered because
+         RemoteViews TextViews can't load our Nothing font resources. -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1.1"
+        android:orientation="vertical"
+        android:paddingEnd="16dp">
+
+        <ImageView
+            android:id="@+id/header_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scaleType="fitStart"
+            android:contentDescription="@string/widget_label" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/caption_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:scaleType="fitStart"
+            android:contentDescription="@string/widget_label" />
+
+        <!-- Timer row in Ndot: event date-time, last-10-min countdown, or
+             live elapsed time. -->
+        <ImageView
+            android:id="@+id/event_time_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scaleType="fitStart"
+            android:contentDescription="@string/widget_label" />
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <FrameLayout
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="@color/f1_divider" />
+
+    <!-- RIGHT: winner row (finished state only) + standings / live panel -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginStart="16dp"
+        android:orientation="vertical">
+
+        <!-- Winner name row: "VER WINS" in Ndot, visible only in finished state -->
+        <ImageView
+            android:id="@+id/winner_name_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:scaleType="fitStart"
+            android:contentDescription="@string/widget_label" />
+
+        <ImageView
+            android:id="@+id/info_panel"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/glyph_toy_label" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light theme (default); dark lives in values-night/ -->
+    <color name="widget_bg">#EDECEA</color>
+    <color name="f1_white">#141414</color>
+    <color name="f1_grey">#6E6E6E</color>
+    <color name="f1_red">#D50000</color>
+    <color name="f1_divider">#D8D6CF</color>
+    <color name="matrix_dot_on">#141414</color>
+    <color name="matrix_dot_off">#DDDCD5</color>
+    <color name="launcher_background">#101010</color>
+</resources>
