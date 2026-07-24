@@ -41,6 +41,15 @@ screen-captured. Regenerate with `python3 tools/render_matrix.py`.</sub>
 
 ## Home-screen widget
 
+<p align="center">
+  <img src="docs/images/widget-wide-upcoming.png" width="320"
+       alt="Glyf1 wide widget: Hungarian Grand Prix, Practice 1 at 14:30, with championship standings">
+</p>
+
+The wide (4×2) widget ahead of a session — event, session, start time, and the
+top of the championship. More states (live, countdown, finished; compact 2×2)
+are being captured across the next race weekend.
+
 <!-- Real device screenshots — capture per docs/SCREENSHOTS.md, drop PNGs into
      docs/images/, then uncomment the tables below. -->
 <!--

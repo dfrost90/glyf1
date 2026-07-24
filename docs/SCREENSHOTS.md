@@ -39,8 +39,8 @@ Add the widget at its **smallest** size (< 180dp wide → compact layout).
 Add/resize the widget to **≥ 180dp wide** → wide layout (adds the winner row,
 6-row standings, session-labelled live art).
 
-- [ ] `widget-wide-upcoming.png` — **default / idle.** `STANDINGS` title,
-      top-6 championship, framed dots; timer row = date/time.
+- [x] `widget-wide-upcoming.png` — **default / idle.** Event, session, start
+      time + championship top. _(captured 2026-07-24, Hungarian GP / FP1.)_
 - [ ] `widget-wide-countdown.png` — **last 10 minutes** before a session
       (`-9M` ticking).
 - [ ] `widget-wide-live.png` — **live session.** `LIVE` + car art with the
