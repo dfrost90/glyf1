@@ -19,52 +19,48 @@ Regenerate any time with `python3 tools/render_matrix.py`.
 - [x] `matrix-result.png` — post-session: winner + session (`VER` / `GP`)
 - [x] `matrix-standings.png` — idle: WDC leader + points (`VER` / `437`)
 
-## Widget — compact (2×2)
+## Widget states — ✅ done
 
-Add the widget at its **smallest** size (< 180dp wide → compact layout).
+The widget has exactly **three** content states per size — there is *no*
+distinct "countdown" widget state (the timer row only ever shows a date/time,
+`LIVE`, or `FINISHED`; the ticking countdown lives on the Glyph Matrix face,
+see the `matrix-*` shots above).
 
-- [ ] `widget-compact-upcoming.png` — **default / idle state.** Top-3 standings
-      panel; timer row shows the next session as a date/time (`13:00`,
-      `SUN 13:00`, or `5 JUL`). Capturable almost any non-session day.
-- [ ] `widget-compact-countdown.png` — **last 10 minutes** before any session.
-      Timer row ticks `-9M … -1M` (re-rendered each minute by
-      `CountdownTickWorker`). Only occurs in the 10 min before FP/quali/race.
-- [ ] `widget-compact-live.png` — **live session.** Timer row `LIVE` (accent
-      colour) + compact F1 car dot-art panel. During any live session.
-- [ ] `widget-compact-finished.png` — **post-session** (until 00:00 UTC). Timer
-      row `FINISHED` + `VER WINS` (race) or `VER POLE` (qualifying).
+Compact (2×2, add at the smallest size):
 
-## Widget — wide (4×2)
+- [x] `widget-compact-upcoming.png` — event / session / start time + top-3.
+- [x] `widget-compact-live.png` — `LIVE` (accent) + compact car dot-art.
+- [x] `widget-compact-finished.png` — `FINISHED` + winner (`… WINS` / `POLE`).
 
-Add/resize the widget to **≥ 180dp wide** → wide layout (adds the winner row,
-6-row standings, session-labelled live art).
+Wide (4×2, ≥ 180dp):
 
-- [x] `widget-wide-upcoming.png` — **default / idle.** Event, session, start
-      time + championship top. _(captured 2026-07-24, Hungarian GP / FP1.)_
-- [ ] `widget-wide-countdown.png` — **last 10 minutes** before a session
-      (`-9M` ticking).
-- [ ] `widget-wide-live.png` — **live session.** `LIVE` + car art with the
-      session label (`RACE` / `QUAL` / `SQUAL` / `SPR` / `FP1`–`FP3`). Grab a
-      `RACE` one for the hero shot if you can.
-- [ ] `widget-wide-finished.png` — **post-session.** `FINISHED`, the
-      `VER WINS` / `VER POLE` winner row, and the result car-art panel.
+- [x] `widget-wide-upcoming.png` — round, event, circuit, start + top-6 board.
+- [x] `widget-wide-live.png` — `LIVE` + session-labelled car art (`RACE`, …).
+- [x] `widget-wide-finished.png` — `FINISHED` + winner row + trophy art.
 
 ## Optional / edge states
 
-- [ ] `widget-nodata.png` — the dot-matrix fallback shown **before the first
-      data fetch** (fresh install, or clear app storage → add widget → capture
-      before refresh lands). Caption reads `NO DATA` / `SCHEDULE TBC`.
-- [ ] Timer-row date variants of the upcoming state, if you want to show them:
-      today `13:00`, this week `SUN 13:00`, further out `5 JUL`.
+- [ ] `widget-nodata.png` — dot-matrix fallback before the first data fetch
+      (`NO DATA` / `SCHEDULE TBC`). Inject with the `nodata` scenario below.
 
-## How to capture
+## How these were captured
 
-The widget must be on your home screen. Then either:
+States are clock/data-driven, so instead of waiting for a race weekend a
+**debug-only** broadcast receiver injects a synthetic state, then re-renders.
+It lives in `app/src/debug/` and never ships in release builds.
 
-- **Phone:** native screenshot, crop to the widget. Simplest.
-- **adb:** `adb exec-out screencap -p > shot.png`, then crop to the widget
-  bounds. If you tell me the widget's pixel rectangle I can add a crop helper
-  to `tools/`.
+    # scenario: upcoming | live-race | live-quali | finished-race |
+    #           finished-quali | nodata
+    adb shell am broadcast -a com.demetrius.f1glyph.DEBUG_INJECT \
+      --es scenario live-race \
+      -n com.demetrius.f1glyph/.debug.DebugStateReceiver
 
-Most states only exist during a race weekend — capture `*-upcoming` now, and
-the countdown / live / finished shots as sessions roll through the next event.
+Then screencap and crop to the widget bounds (found via
+`adb shell uiautomator dump`):
+
+    adb exec-out screencap -p > /tmp/s.png
+    magick /tmp/s.png -crop 505x505+92+196   +repage widget-compact-*.png
+    magick /tmp/s.png -crop 1075x505+92+766  +repage widget-wide-*.png
+
+Trigger a normal refresh afterwards to restore live data:
+`adb shell am broadcast -a com.demetrius.f1glyph.ACTION_MANUAL_REFRESH -n com.demetrius.f1glyph/.widget.F1WidgetProvider`

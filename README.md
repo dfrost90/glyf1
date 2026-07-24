@@ -41,34 +41,21 @@ screen-captured. Regenerate with `python3 tools/render_matrix.py`.</sub>
 
 ## Home-screen widget
 
-<p align="center">
-  <img src="docs/images/widget-wide-upcoming.png" width="320"
-       alt="Glyf1 wide widget: Hungarian Grand Prix, Practice 1 at 14:30, with championship standings">
-</p>
+Two sizes, each with three states — before a session (event / session / start
+time + standings), during it (`LIVE` + dot-matrix car art), and after
+(`FINISHED` + winner).
 
-The wide (4×2) widget ahead of a session — event, session, start time, and the
-top of the championship. More states (live, countdown, finished; compact 2×2)
-are being captured across the next race weekend.
+**Wide (4×2):**
 
-<!-- Real device screenshots — capture per docs/SCREENSHOTS.md, drop PNGs into
-     docs/images/, then uncomment the tables below. -->
-<!--
-Compact (2×2):
+| Upcoming | Live | Finished |
+|:---:|:---:|:---:|
+| ![Upcoming](docs/images/widget-wide-upcoming.png) | ![Live](docs/images/widget-wide-live.png) | ![Finished](docs/images/widget-wide-finished.png) |
 
-| Upcoming | Countdown | Live | Finished |
-|:---:|:---:|:---:|:---:|
-| ![](docs/images/widget-compact-upcoming.png) | ![](docs/images/widget-compact-countdown.png) | ![](docs/images/widget-compact-live.png) | ![](docs/images/widget-compact-finished.png) |
+**Compact (2×2):**
 
-Wide (4×2):
-
-| Upcoming | Countdown | Live | Finished |
-|:---:|:---:|:---:|:---:|
-| ![](docs/images/widget-wide-upcoming.png) | ![](docs/images/widget-wide-countdown.png) | ![](docs/images/widget-wide-live.png) | ![](docs/images/widget-wide-finished.png) |
--->
-
-_Widget screenshots coming — captured on device as sessions roll through a
-race weekend. See [`docs/SCREENSHOTS.md`](docs/SCREENSHOTS.md) for the full
-checklist._
+| Upcoming | Live | Finished |
+|:---:|:---:|:---:|
+| ![Upcoming](docs/images/widget-compact-upcoming.png) | ![Live](docs/images/widget-compact-live.png) | ![Finished](docs/images/widget-compact-finished.png) |
 
 ## Build & install
 

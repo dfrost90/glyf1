@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Debug-only: lets `adb am broadcast` inject synthetic widget/toy states
+         for screenshots. Merged into debug builds only; absent from release. -->
+    <application>
+        <receiver
+            android:name=".debug.DebugStateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.demetrius.f1glyph.DEBUG_INJECT" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
