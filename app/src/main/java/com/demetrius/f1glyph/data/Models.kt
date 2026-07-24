@@ -97,8 +97,12 @@ data class RaceWeekend(
     val gpName: String,
     val circuitName: String,
     val country: String,
+    // nextSession / isSessionLiveNow are a snapshot at fetch time; the full
+    // [sessions] list lets any render recompute them for the current clock via
+    // SessionSelection, so a finished session doesn't linger as "upcoming".
     val nextSession: UpcomingSession?,
-    val isSessionLiveNow: Boolean
+    val isSessionLiveNow: Boolean,
+    val sessions: List<UpcomingSession> = emptyList()
 )
 
 data class LeaderInfo(val label: String)

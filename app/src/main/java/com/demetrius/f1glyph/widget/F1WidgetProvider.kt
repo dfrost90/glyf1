@@ -13,8 +13,8 @@ import com.demetrius.f1glyph.data.F1WidgetState
 import com.demetrius.f1glyph.data.SessionKind
 import com.demetrius.f1glyph.data.WidgetStateCache
 import com.demetrius.f1glyph.util.DisplayFormat
+import com.demetrius.f1glyph.util.resolvedAt
 import com.demetrius.f1glyph.util.MatrixRenderer
-import com.demetrius.f1glyph.util.SessionWindow
 import com.demetrius.f1glyph.util.StandingsRenderer
 import com.demetrius.f1glyph.util.TextPanelRenderer
 import com.demetrius.f1glyph.util.WidgetPalette
@@ -89,8 +89,13 @@ open class F1WidgetProvider : AppWidgetProvider() {
             context: Context,
             awm: AppWidgetManager,
             appWidgetId: Int,
-            state: F1WidgetState
+            rawState: F1WidgetState
         ): RemoteViews {
+            val now = System.currentTimeMillis()
+            // Resolve which session is live/next for the current clock, so a
+            // just-finished session doesn't linger as "upcoming" until the next
+            // network fetch (see SessionSelection.resolvedAt).
+            val state = rawState.resolvedAt(now)
             val options = awm.getAppWidgetOptions(appWidgetId)
             val minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
             val maxHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
@@ -107,12 +112,8 @@ open class F1WidgetProvider : AppWidgetProvider() {
 
             val weekend = state.weekend
             val session = weekend?.nextSession
-            val now = System.currentTimeMillis()
-            // Decide liveness at render time: the cached flag lags a session
-            // start by one refresh, which made the countdown tick negative.
-            val liveNow = session != null &&
-                now >= session.epochMillis &&
-                now < session.epochMillis + SessionWindow.liveWindowMillis(session.kind)
+            // nextSession / isSessionLiveNow were resolved for `now` above.
+            val liveNow = weekend?.isSessionLiveNow == true
 
             val entries = state.topStandings
             val todayResult = state.todayResult

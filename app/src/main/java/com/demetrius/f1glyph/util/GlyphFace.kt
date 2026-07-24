@@ -19,7 +19,9 @@ object GlyphFace {
 
     private val SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000L
 
-    fun render(state: F1WidgetState, nowMillis: Long, gridSize: Int): Bitmap {
+    fun render(rawState: F1WidgetState, nowMillis: Long, gridSize: Int): Bitmap {
+        // Resolve live/next session for the current clock (see resolvedAt).
+        val state = rawState.resolvedAt(nowMillis)
         val session = state.weekend?.nextSession
 
         // ── Post-session result (until midnight UTC) ───────────────────────

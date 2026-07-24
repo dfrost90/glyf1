@@ -24,6 +24,7 @@ class WidgetStateCache(private val context: Context) {
         val ROUND = stringPreferencesKey("round")
         val SESSION_KIND = stringPreferencesKey("session_kind")
         val SESSION_EPOCH = longPreferencesKey("session_epoch")
+        val SESSIONS = stringPreferencesKey("sessions")
         val IS_LIVE = stringPreferencesKey("is_live")
         val LEADER_LABEL = stringPreferencesKey("leader_label")
         val FETCHED_AT = longPreferencesKey("fetched_at")
@@ -69,6 +70,9 @@ class WidgetStateCache(private val context: Context) {
                     p[Keys.SESSION_KIND] = s.kind.name
                     p[Keys.SESSION_EPOCH] = s.epochMillis
                 }
+                if (w.sessions.isNotEmpty()) {
+                    p[Keys.SESSIONS] = SessionsCodec.encode(w.sessions)
+                }
             }
             state.leader?.let { p[Keys.LEADER_LABEL] = it.label }
             if (state.topStandings.isNotEmpty()) {
@@ -95,14 +99,20 @@ class WidgetStateCache(private val context: Context) {
         val p = context.dataStore.data.first()
         val kind = p[Keys.SESSION_KIND]?.let { runCatching { SessionKind.valueOf(it) }.getOrNull() }
         val epoch = p[Keys.SESSION_EPOCH]
+        val nextSession = if (kind != null && epoch != null) UpcomingSession(kind, epoch) else null
+        // Migration: caches written before SESSIONS existed only have the single
+        // nextSession — fall back to it so those renders still show something.
+        val sessions = p[Keys.SESSIONS]?.let { SessionsCodec.decode(it) }
+            ?: listOfNotNull(nextSession)
         val weekend = p[Keys.GP_NAME]?.let { name ->
             RaceWeekend(
                 round = p[Keys.ROUND]?.toIntOrNull() ?: 0,
                 gpName = name,
                 circuitName = p[Keys.CIRCUIT].orEmpty(),
                 country = p[Keys.COUNTRY].orEmpty(),
-                nextSession = if (kind != null && epoch != null) UpcomingSession(kind, epoch) else null,
-                isSessionLiveNow = p[Keys.IS_LIVE]?.toBoolean() ?: false
+                nextSession = nextSession,
+                isSessionLiveNow = p[Keys.IS_LIVE]?.toBoolean() ?: false,
+                sessions = sessions
             )
         }
         val leader = p[Keys.LEADER_LABEL]?.let { LeaderInfo(it) }

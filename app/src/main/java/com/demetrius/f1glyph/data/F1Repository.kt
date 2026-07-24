@@ -1,7 +1,7 @@
 package com.demetrius.f1glyph.data
 
 import android.util.Log
-import com.demetrius.f1glyph.util.SessionWindow
+import com.demetrius.f1glyph.util.SessionSelection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -60,19 +60,16 @@ class F1Repository(
             }
         }.sortedBy { it.epochMillis }
 
-        val now = System.currentTimeMillis()
-        val liveSession = sessions.lastOrNull {
-            it.epochMillis <= now && now - it.epochMillis < SessionWindow.liveWindowMillis(it.kind)
-        }
-        val nextSession = liveSession ?: sessions.firstOrNull { it.epochMillis > now }
+        val active = SessionSelection.select(sessions, System.currentTimeMillis())
 
         return RaceWeekend(
             round = race.round.toIntOrNull() ?: 0,
             gpName = race.raceName,
             circuitName = race.Circuit.circuitName,
             country = race.Circuit.Location.country,
-            nextSession = nextSession,
-            isSessionLiveNow = liveSession != null
+            nextSession = active.session,
+            isSessionLiveNow = active.isLive,
+            sessions = sessions
         )
     }
 
