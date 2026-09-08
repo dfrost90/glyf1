@@ -107,4 +107,13 @@ class LiveMatrixPlannerTest {
         val empty = F1WidgetState(weekend = null, leader = null, fetchedAtMillis = 0L)
         assertEquals(LiveMatrixPlanner.Decision.Idle, LiveMatrixPlanner.decide(empty, nowMillis = 0L))
     }
+
+    @Test
+    fun `releases when the full cached schedule has ended`() {
+        val state = state(10 * hour).let {
+            it.copy(weekend = it.weekend!!.copy(sessions = listOf(it.weekend.nextSession!!)))
+        }
+        assertEquals(LiveMatrixPlanner.Decision.Release,
+            LiveMatrixPlanner.decide(state, 13 * hour))
+    }
 }

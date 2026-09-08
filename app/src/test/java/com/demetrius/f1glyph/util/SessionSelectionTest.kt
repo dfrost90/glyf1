@@ -4,6 +4,8 @@ import com.demetrius.f1glyph.data.F1WidgetState
 import com.demetrius.f1glyph.data.RaceWeekend
 import com.demetrius.f1glyph.data.SessionKind
 import com.demetrius.f1glyph.data.UpcomingSession
+import com.demetrius.f1glyph.data.SessionResult
+import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -79,5 +81,64 @@ class SessionSelectionTest {
         val resolved = stateWith(fp1, live = false).resolvedAt(fp1.epochMillis + minute)
         assertEquals(fp1, resolved.weekend?.nextSession)
         assertTrue(resolved.weekend?.isSessionLiveNow == true)
+    }
+
+    @Test
+    fun `result expires at midnight UTC even without a weekend`() {
+        val start = Instant.parse("2026-07-05T13:00:00Z").toEpochMilli()
+        val state = F1WidgetState(null, null, start,
+            todayResult = SessionResult("VER", "GP", start))
+        assertEquals(state.todayResult,
+            state.resolvedAt(Instant.parse("2026-07-05T23:59:59Z").toEpochMilli()).todayResult)
+        assertNull(state.resolvedAt(Instant.parse("2026-07-06T00:00:00Z").toEpochMilli()).todayResult)
+    }
+
+    @Test
+    fun `a later live session replaces an earlier result across all labels`() {
+        val stale = stateWith(fp1, live = false).copy(
+            todayResult = SessionResult("VER", "SQ3", fp1.epochMillis))
+        val resolved = stale.resolvedAt(fp2.epochMillis + minute)
+        assertNull(resolved.todayResult)
+        assertTrue(resolved.weekend!!.isSessionLiveNow)
+        assertEquals("PRACTICE 2", DisplayFormat.countdownCaption(resolved))
+        assertEquals("LIVE", DisplayFormat.widgetTimer(resolved, fp2.epochMillis + minute))
+    }
+
+    @Test
+    fun `published result ends the estimated live state for the same session`() {
+        val state = stateWith(fp1, live = true).copy(
+            todayResult = SessionResult("VER", "Q3", fp1.epochMillis))
+        val resolved = state.resolvedAt(fp1.epochMillis + minute)
+        assertEquals(state.todayResult, resolved.todayResult)
+        assertFalse(resolved.weekend!!.isSessionLiveNow)
+        assertEquals("FINISHED", DisplayFormat.widgetTimer(resolved, fp1.epochMillis + minute))
+    }
+
+    @Test
+    fun `legacy single session snapshot also expires`() {
+        val state = stateWith(fp1, live = true).let {
+            it.copy(weekend = it.weekend!!.copy(sessions = emptyList()))
+        }
+        val resolved = state.resolvedAt(fp1.epochMillis + SessionWindow.liveWindowMillis(fp1.kind))
+        assertNull(resolved.weekend!!.nextSession)
+        assertFalse(resolved.weekend!!.isSessionLiveNow)
+    }
+
+    @Test
+    fun `widget counts down through final ten minutes and switches to live`() {
+        val state = stateWith(fp1, live = false)
+        for ((remaining, label) in listOf(600_000L to "-10M", 60_001L to "-2M", 1L to "-1M")) {
+            val now = fp1.epochMillis - remaining
+            assertEquals(label, DisplayFormat.widgetTimer(state.resolvedAt(now), now))
+        }
+        assertEquals("LIVE", DisplayFormat.widgetTimer(state.resolvedAt(fp1.epochMillis), fp1.epochMillis))
+    }
+
+    @Test
+    fun `sprint result describes a win rather than pole`() {
+        assertEquals("WINS", SessionResult("VER", "S", 0).action)
+        assertEquals("WINS", SessionResult("VER", "GP", 0).action)
+        assertEquals("POLE", SessionResult("VER", "SQ3", 0).action)
+        assertEquals("POLE", SessionResult("VER", "Q3", 0).action)
     }
 }

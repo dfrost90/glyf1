@@ -15,11 +15,12 @@ import com.demetrius.f1glyph.data.F1Repository
 import com.demetrius.f1glyph.data.WidgetStateCache
 import com.demetrius.f1glyph.widget.F1WidgetProvider
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 
 /**
- * Sole network caller in the app. Fetches the F1 state, persists it to the
+ * Fetches the F1 state, persists it to the
  * DataStore cache, then re-renders all widgets. The Glyph Toy picks up the
- * new cache on its own 1/min redraw tick.
+ * new cache on its own redraw tick.
  */
 class RefreshWorker(appContext: Context, params: WorkerParameters) :
     CoroutineWorker(appContext, params) {
@@ -32,7 +33,9 @@ class RefreshWorker(appContext: Context, params: WorkerParameters) :
             LiveMatrixWorker.scheduleNext(applicationContext)
             CountdownTickWorker.scheduleNext(applicationContext)
             Result.success()
-        } catch (t: Throwable) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
     }

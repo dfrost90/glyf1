@@ -3,6 +3,7 @@ package com.demetrius.f1glyph.data
 import android.util.Log
 import com.demetrius.f1glyph.util.SessionSelection
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDate
@@ -17,21 +18,17 @@ class F1Repository(
 ) {
 
     suspend fun fetchState(): F1WidgetState = withContext(Dispatchers.IO) {
-        val weekend = runCatching { fetchWeekend() }.onFailure {
-            Log.w(TAG, "fetchWeekend failed", it)
-        }.getOrNull()
+        // A failed request must retry without replacing the cached schedule.
+        // A successful empty response still clears it at the end of the season.
+        val weekend = fetchWeekend()
 
-        val standings = runCatching { fetchTopStandings() }.onFailure {
-            Log.w(TAG, "fetchTopStandings failed", it)
-        }.getOrNull().orEmpty()
+        val standings = optionalFetch("standings") { fetchTopStandings() }.orEmpty()
 
         val leader = standings.firstOrNull()?.let { LeaderInfo(it.code) }
 
         val now = System.currentTimeMillis()
         val todayResult = if (weekend?.isSessionLiveNow != true) {
-            runCatching { fetchTodayResult(now) }.onFailure {
-                Log.w(TAG, "fetchTodayResult failed", it)
-            }.getOrNull()
+            fetchTodayResult(now)
         } else null
 
         F1WidgetState(
@@ -91,9 +88,9 @@ class F1Repository(
         val today = Instant.ofEpochMilli(nowMillis).atZone(ZoneOffset.UTC).toLocalDate()
 
         // Race result (Sunday)
-        val lastRaceDto = runCatching {
+        val lastRaceDto = optionalFetch("race result") {
             jolpica.getLastRaceResult().mrData.raceTable?.races?.firstOrNull()
-        }.getOrNull()
+        }
         if (lastRaceDto != null) {
             val raceDate = runCatching { LocalDate.parse(lastRaceDto.date) }.getOrNull()
             if (raceDate == today) {
@@ -111,9 +108,9 @@ class F1Repository(
         }
 
         // Qualifying result (Saturday)
-        val lastQualDto = runCatching {
+        val lastQualDto = optionalFetch("qualifying result") {
             jolpica.getLastQualifyingResult().mrData.raceTable?.races?.firstOrNull()
-        }.getOrNull()
+        }
         if (lastQualDto != null) {
             val qualDate = runCatching {
                 lastQualDto.Qualifying?.date?.let { LocalDate.parse(it) }
@@ -136,10 +133,19 @@ class F1Repository(
     }
 
     private fun SessionTimeDto.toEpochMillis(): Long = parseSessionInstant(date, time)
+
+    private suspend fun <T> optionalFetch(label: String, fetch: suspend () -> T): T? = try {
+        fetch()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w(TAG, "Failed to fetch $label", e)
+        null
+    }
 }
 
 internal fun parseSessionInstant(date: String, time: String): Long {
-    val cleanTime = if (time.endsWith("Z")) time else "${time}Z"
+    val cleanTime = if (time.endsWith("Z") || '+' in time || '-' in time) time else "${time}Z"
     val odt = OffsetDateTime.parse(
         "${date}T$cleanTime",
         DateTimeFormatter.ISO_OFFSET_DATE_TIME

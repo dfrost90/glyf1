@@ -120,7 +120,9 @@ data class SessionResult(
     val sessionEpochMillis: Long, // epoch of qualifying/race start, for same-day check
     val round: Int = 0,
     val gpName: String = ""
-)
+) {
+    val action: String get() = if (sessionLabel == "GP" || sessionLabel == "S") "WINS" else "POLE"
+}
 
 data class F1WidgetState(
     val weekend: RaceWeekend?,

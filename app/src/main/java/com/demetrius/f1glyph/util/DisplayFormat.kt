@@ -9,6 +9,19 @@ import java.util.Locale
 
 object DisplayFormat {
 
+    /** Timer text for a state already resolved against [nowMillis]. */
+    fun widgetTimer(state: F1WidgetState, nowMillis: Long): String {
+        if (state.weekend?.isSessionLiveNow == true) return "LIVE"
+        if (state.todayResult != null) return "FINISHED"
+        val session = state.weekend?.nextSession ?: return "--"
+        val remaining = session.epochMillis - nowMillis
+        return if (remaining in 1..CountdownTickPlanner.WINDOW_MILLIS) {
+            countdownCompact(session.epochMillis, nowMillis)
+        } else {
+            sessionWhen(session.epochMillis, nowMillis)
+        }
+    }
+
     /**
      * Event schedule label for the widget timer row: time-of-day if today,
      * day-of-week if within the next 7 days, otherwise day + month.
@@ -91,17 +104,8 @@ object DisplayFormat {
         val weekend = state.weekend
         val session = weekend?.nextSession
 
-        val top = when {
-            weekend?.isSessionLiveNow == true && session != null -> sessionShortLabel(session.kind)
-            session != null -> sessionShortLabel(session.kind)
-            else -> "F1"
-        }
-
-        val bottom = when {
-            weekend?.isSessionLiveNow == true -> state.leader?.label ?: "--"
-            state.leader != null -> state.leader.label
-            else -> "--"
-        }
+        val top = session?.let { sessionShortLabel(it.kind) } ?: "F1"
+        val bottom = state.leader?.label ?: "--"
 
         return top to bottom
     }

@@ -32,7 +32,11 @@ object LiveMatrixPlanner {
     }
 
     fun decide(state: F1WidgetState, nowMillis: Long): Decision {
-        val session = state.resolvedAt(nowMillis).weekend?.nextSession ?: return Decision.Idle
+        val resolved = state.resolvedAt(nowMillis)
+        if (resolved.todayResult != null) return Decision.Release
+        val session = resolved.weekend?.nextSession ?: return if (
+            state.weekend?.nextSession != null || state.weekend?.sessions?.isNotEmpty() == true
+        ) Decision.Release else Decision.Idle
         val start = session.epochMillis
         val windowEnd = start + SessionWindow.liveWindowMillis(session.kind)
         val toSession = start - nowMillis

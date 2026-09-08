@@ -45,6 +45,11 @@ Two sizes, each with three states — before a session (event / session / start
 time + standings), during it (`LIVE` + dot-matrix car art), and after
 (`FINISHED` + winner).
 
+The timer counts down during the final ten minutes. Background updates are
+best-effort and may be delayed by Android battery management. Results expire
+at midnight UTC and give way to a later live session. Bitmap panels include
+text descriptions for screen readers.
+
 **Wide (4×2):**
 
 | Upcoming | Live | Finished |
@@ -106,17 +111,17 @@ keystore, and fill it in:
 
 ## How it works
 
-`WorkManager` (`RefreshWorker`, every 30 min) is the only network caller →
+`WorkManager` (`RefreshWorker`, every 30 min, plus `LiveMatrixWorker` while live) →
 `DataStore` cache (`WidgetStateCache`) → both the widget (`F1WidgetProvider`,
 all text rendered as Ndot/NType bitmaps) and the toy (`F1GlyphToyService`)
 render from cache. `MatrixRenderer` + `PixelFont` turn short strings into the
 13×13 dot-matrix face. During live windows the QS tile lets the app hold the
 matrix via `setAppMatrixFrame`.
 
-**Data:** schedule & standings from [Jolpica](https://jolpi.ca); live
-positions from [OpenF1](https://openf1.org). OpenF1's real-time feed is
-paywalled, so during live sessions positions gracefully fall back to
-championship standings.
+**Data:** schedule, championship standings, race winners and qualifying
+results from [Jolpica](https://jolpi.ca). Live status is estimated from the
+session schedule; this build does not fetch live positions or lap timing.
+A failed schedule request keeps the cached weekend for the next retry.
 
 Design notes and the build plan live in `docs/superpowers/`.
 

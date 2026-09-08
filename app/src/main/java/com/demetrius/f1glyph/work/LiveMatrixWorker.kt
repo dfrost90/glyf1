@@ -14,6 +14,7 @@ import com.demetrius.f1glyph.util.LiveMatrixPlanner
 import com.demetrius.f1glyph.widget.F1WidgetProvider
 import com.nothing.ketchum.Common
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 
 /**
  * Drives the Glyph Matrix takeover. While the QS toggle is on it holds the
@@ -36,16 +37,22 @@ class LiveMatrixWorker(appContext: Context, params: WorkerParameters) :
         when (val decision = LiveMatrixPlanner.decide(state, now)) {
             is LiveMatrixPlanner.Decision.PushCountdown -> {
                 pushFace(cache)
-                schedule(applicationContext, decision.recheckDelayMillis)
+                schedule(applicationContext, decision.recheckDelayMillis, ExistingWorkPolicy.APPEND_OR_REPLACE)
             }
             is LiveMatrixPlanner.Decision.PushLive -> {
                 // Live window: fetch inline so positions/lap stay fresh.
                 // (Not via RefreshWorker — its doWork re-schedules this
                 // worker, which would tight-loop the two queues.)
-                runCatching { cache.save(F1Repository().fetchState()) }
+                try {
+                    cache.save(F1Repository().fetchState())
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    android.util.Log.w("LiveMatrixWorker", "Refresh failed; using cached state", e)
+                }
                 pushFace(cache)
                 F1WidgetProvider.renderAll(applicationContext)
-                schedule(applicationContext, decision.recheckDelayMillis)
+                schedule(applicationContext, decision.recheckDelayMillis, ExistingWorkPolicy.APPEND_OR_REPLACE)
             }
             LiveMatrixPlanner.Decision.Release -> {
                 GlyphAppMatrix.release(applicationContext)
@@ -74,12 +81,16 @@ class LiveMatrixWorker(appContext: Context, params: WorkerParameters) :
             WorkManager.getInstance(context).cancelUniqueWork(UNIQUE_WORK)
         }
 
-        private fun schedule(context: Context, delayMillis: Long) {
+        private fun schedule(
+            context: Context,
+            delayMillis: Long,
+            policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE
+        ) {
             val request = OneTimeWorkRequestBuilder<LiveMatrixWorker>()
                 .setInitialDelay(delayMillis.coerceAtLeast(0L), TimeUnit.MILLISECONDS)
                 .build()
             WorkManager.getInstance(context)
-                .enqueueUniqueWork(UNIQUE_WORK, ExistingWorkPolicy.REPLACE, request)
+                .enqueueUniqueWork(UNIQUE_WORK, policy, request)
         }
     }
 }

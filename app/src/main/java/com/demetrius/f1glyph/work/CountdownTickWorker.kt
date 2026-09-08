@@ -24,7 +24,7 @@ class CountdownTickWorker(appContext: Context, params: WorkerParameters) :
 
     override suspend fun doWork(): Result {
         F1WidgetProvider.renderAll(applicationContext)
-        scheduleNext(applicationContext)
+        scheduleNext(applicationContext, ExistingWorkPolicy.APPEND_OR_REPLACE)
         return Result.success()
     }
 
@@ -32,7 +32,9 @@ class CountdownTickWorker(appContext: Context, params: WorkerParameters) :
         private const val UNIQUE_WORK = "f1_countdown_tick"
 
         /** Schedule the next tick from the cached schedule (or stand down). */
-        suspend fun scheduleNext(context: Context) {
+        suspend fun scheduleNext(context: Context) = scheduleNext(context, ExistingWorkPolicy.REPLACE)
+
+        private suspend fun scheduleNext(context: Context, policy: ExistingWorkPolicy) {
             val now = System.currentTimeMillis()
             val sessions = WidgetStateCache(context).load().weekend?.sessions ?: emptyList()
             val active = SessionSelection.select(sessions, now)
@@ -51,13 +53,14 @@ class CountdownTickWorker(appContext: Context, params: WorkerParameters) :
             val wm = WorkManager.getInstance(context)
             if (delay == null) {
                 // Nothing pending: drop any stale queued tick.
-                wm.cancelUniqueWork(UNIQUE_WORK)
+                if (policy == ExistingWorkPolicy.REPLACE) wm.cancelUniqueWork(UNIQUE_WORK)
                 return
             }
             val request = OneTimeWorkRequestBuilder<CountdownTickWorker>()
                 .setInitialDelay(delay, TimeUnit.MILLISECONDS)
                 .build()
-            wm.enqueueUniqueWork(UNIQUE_WORK, ExistingWorkPolicy.REPLACE, request)
+            // A running tick appends its successor so it can finish normally.
+            wm.enqueueUniqueWork(UNIQUE_WORK, policy, request)
         }
     }
 }

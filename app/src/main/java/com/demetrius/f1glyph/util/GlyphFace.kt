@@ -3,9 +3,6 @@ package com.demetrius.f1glyph.util
 import android.graphics.Bitmap
 import com.demetrius.f1glyph.data.F1WidgetState
 import com.demetrius.f1glyph.data.SessionKind
-import java.time.Instant
-import java.time.ZoneId
-import java.time.ZoneOffset
 
 /**
  * Picks what the Glyph Matrix shows based on session timing:
@@ -27,21 +24,13 @@ object GlyphFace {
         // ── Post-session result (until midnight UTC) ───────────────────────
         val result = state.todayResult
         if (result != null) {
-            val resultDay = Instant.ofEpochMilli(result.sessionEpochMillis)
-                .atZone(ZoneOffset.UTC).toLocalDate()
-            val todayUtc = Instant.ofEpochMilli(nowMillis).atZone(ZoneOffset.UTC).toLocalDate()
-            if (resultDay == todayUtc) {
-                return MatrixRenderer.renderScheduleFace(
-                    result.driverCode, 0, result.sessionLabel, gridSize
-                )
-            }
+            return MatrixRenderer.renderScheduleFace(
+                result.driverCode, 0, result.sessionLabel, gridSize
+            )
         }
 
         // ── Live session → spinning wheel ──────────────────────────────────
-        if (session != null &&
-            nowMillis >= session.epochMillis &&
-            nowMillis < session.epochMillis + SessionWindow.liveWindowMillis(session.kind)
-        ) {
+        if (state.weekend?.isSessionLiveNow == true) {
             val frame = ((nowMillis / 200) % 8).toInt()
             return MatrixRenderer.renderWheelBitmap(spinning = true, frameIndex = frame, gridSize = gridSize)
         }

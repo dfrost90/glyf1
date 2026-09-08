@@ -2,6 +2,8 @@ package com.demetrius.f1glyph.util
 
 import com.demetrius.f1glyph.data.F1WidgetState
 import com.demetrius.f1glyph.data.UpcomingSession
+import java.time.Instant
+import java.time.ZoneOffset
 
 /**
  * Chooses which weekend session the widget/toy should show *right now*, from
@@ -27,14 +29,26 @@ object SessionSelection {
 /**
  * Returns a copy of this state with the weekend's [nextSession] and
  * [isSessionLiveNow] recomputed for [now] from the cached session list, so
- * every render reflects the current clock without a network fetch. A no-op
- * when there is no weekend or no session list.
+ * every render reflects the current clock without a network fetch. Results
+ * expire at midnight UTC and yield to a later live session.
  */
 fun F1WidgetState.resolvedAt(now: Long): F1WidgetState {
-    val w = weekend ?: return this
-    if (w.sessions.isEmpty()) return this
-    val active = SessionSelection.select(w.sessions, now)
+    val resolvedWeekend = weekend?.let { w ->
+        val sessions = w.sessions.ifEmpty { listOfNotNull(w.nextSession) }
+        val active = SessionSelection.select(sessions, now)
+        w.copy(nextSession = active.session, isSessionLiveNow = active.isLive)
+    }
+    val today = Instant.ofEpochMilli(now).atZone(ZoneOffset.UTC).toLocalDate()
+    val result = todayResult?.takeIf {
+        it.sessionEpochMillis <= now &&
+            Instant.ofEpochMilli(it.sessionEpochMillis).atZone(ZoneOffset.UTC).toLocalDate() == today &&
+            !(resolvedWeekend?.isSessionLiveNow == true &&
+                resolvedWeekend.nextSession!!.epochMillis > it.sessionEpochMillis)
+    }
+    // A published result is authoritative even if the estimated live window
+    // for that same session has not closed yet.
     return copy(
-        weekend = w.copy(nextSession = active.session, isSessionLiveNow = active.isLive)
+        weekend = if (result != null) resolvedWeekend?.copy(isSessionLiveNow = false) else resolvedWeekend,
+        todayResult = result
     )
 }

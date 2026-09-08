@@ -5,7 +5,7 @@ import android.util.Log
 import com.demetrius.f1glyph.data.F1WidgetState
 import com.demetrius.f1glyph.data.WidgetStateCache
 import com.demetrius.f1glyph.util.GlyphFace
-import com.demetrius.f1glyph.util.SessionWindow
+import com.demetrius.f1glyph.util.resolvedAt
 import com.nothing.ketchum.Common
 import com.nothing.ketchum.GlyphMatrixFrame
 import com.nothing.ketchum.GlyphMatrixManager
@@ -17,24 +17,23 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneOffset
 
 /**
  * Glyph Toy: shows context-aware F1 info on the Glyph Matrix.
- * Loop cadence scales with phase: 200 ms live (spinner), 350 ms race week
- * (marquee / countdown), 1 s standings cycle, 30 s post-session, 60 s idle.
+ * Loop cadence scales with phase: 200 ms live (spinner), 60 s race week
+ * (countdown), 1 s standings cycle, 30 s post-session, 60 s idle.
  */
 class F1GlyphToyService : GlyphMatrixService("F1-Toy") {
 
     private var scope: CoroutineScope? = null
 
     override fun performOnServiceConnected(context: Context, glyphMatrixManager: GlyphMatrixManager) {
+        scope?.cancel()
         scope = CoroutineScope(Dispatchers.Default + SupervisorJob()).also { s ->
             s.launch {
                 while (isActive) {
                     val now = System.currentTimeMillis()
-                    val state = WidgetStateCache(applicationContext).load()
+                    val state = WidgetStateCache(applicationContext).load().resolvedAt(now)
                     redraw(state, now)
                     delay(loopDelay(state, now))
                 }
@@ -67,23 +66,14 @@ class F1GlyphToyService : GlyphMatrixService("F1-Toy") {
 
     private fun loopDelay(state: F1WidgetState, nowMillis: Long): Long {
         // Post-session result: static display, check every 30 s for midnight rollover
-        val result = state.todayResult
-        if (result != null) {
-            val resultDay = Instant.ofEpochMilli(result.sessionEpochMillis)
-                .atZone(ZoneOffset.UTC).toLocalDate()
-            val todayUtc = Instant.ofEpochMilli(nowMillis).atZone(ZoneOffset.UTC).toLocalDate()
-            if (resultDay == todayUtc) return 30_000L
-        }
+        if (state.todayResult != null) return 30_000L
+        if (state.weekend?.isSessionLiveNow == true) return 200L
 
         val session = state.weekend?.nextSession
         if (session == null || session.epochMillis - nowMillis > 7 * 24 * 60 * 60 * 1000L) {
             // Standings cycle: tick every 1 s so transitions happen within 1 s of the 3 s boundary
             return if (state.topStandings.isNotEmpty()) 1_000L else 60_000L
         }
-
-        val isLive = nowMillis >= session.epochMillis &&
-            nowMillis < session.epochMillis + SessionWindow.liveWindowMillis(session.kind)
-        if (isLive) return 200L
 
         return 60_000L // race week countdown (static, updates once per minute is enough)
     }

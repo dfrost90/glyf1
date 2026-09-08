@@ -23,8 +23,6 @@ import com.demetrius.f1glyph.work.RefreshWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneOffset
 
 open class F1WidgetProvider : AppWidgetProvider() {
 
@@ -57,11 +55,7 @@ open class F1WidgetProvider : AppWidgetProvider() {
     }
 
     override fun onDisabled(context: Context) {
-        val awm = AppWidgetManager.getInstance(context)
-        val wideStillPresent = awm
-            .getAppWidgetIds(ComponentName(context, F1WidgetProviderWide::class.java))
-            .isNotEmpty()
-        if (!wideStillPresent) RefreshWorker.cancelPeriodic(context)
+        if (widgetIds(context).isEmpty()) RefreshWorker.cancelPeriodic(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -75,11 +69,16 @@ open class F1WidgetProvider : AppWidgetProvider() {
         const val ACTION_MANUAL_REFRESH = "com.demetrius.f1glyph.ACTION_MANUAL_REFRESH"
         private const val WIDE_MIN_WIDTH_DP = 180
 
+        private fun widgetIds(context: Context): IntArray {
+            val manager = AppWidgetManager.getInstance(context)
+            return manager.getAppWidgetIds(ComponentName(context, F1WidgetProvider::class.java)) +
+                manager.getAppWidgetIds(ComponentName(context, F1WidgetProviderWide::class.java))
+        }
+
         /** Called by RefreshWorker after the cache is updated. */
         suspend fun renderAll(context: Context) {
             val awm = AppWidgetManager.getInstance(context)
-            val ids = awm.getAppWidgetIds(ComponentName(context, F1WidgetProvider::class.java)) +
-                      awm.getAppWidgetIds(ComponentName(context, F1WidgetProviderWide::class.java))
+            val ids = widgetIds(context)
             if (ids.isEmpty()) return
             val state = WidgetStateCache(context).load()
             ids.forEach { id -> awm.updateAppWidget(id, buildViews(context, awm, id, state)) }
@@ -152,10 +151,14 @@ open class F1WidgetProvider : AppWidgetProvider() {
                 }
             }
             views.setImageViewBitmap(R.id.header_panel, header)
+            views.setContentDescription(R.id.header_panel,
+                listOfNotNull(displayRound?.let { "Round $it" }, displayGpName).joinToString(", "))
+            val caption = DisplayFormat.countdownCaption(state)
+            views.setContentDescription(R.id.caption_panel, caption)
             views.setImageViewBitmap(
                 R.id.caption_panel,
                 TextPanelRenderer.line(
-                    DisplayFormat.countdownCaption(state),
+                    caption,
                     12f, palette.secondary, ndot, leftColWDp
                 )
             )
@@ -164,11 +167,8 @@ open class F1WidgetProvider : AppWidgetProvider() {
             // if the event is today; day-of-week if within the next 7 days;
             // day+month otherwise. ---
             val timerSizeDp = if (wide) 25f else 20f
-            val timerText = when {
-                liveNow -> "LIVE"
-                todayResult != null -> "FINISHED"
-                else -> session?.let { DisplayFormat.sessionWhen(it.epochMillis, now) } ?: "--"
-            }
+            val timerText = DisplayFormat.widgetTimer(state, now)
+            views.setContentDescription(R.id.event_time_panel, timerText)
             val timerColor = if (liveNow || !wide) palette.accent else palette.primary
             views.setImageViewBitmap(
                 R.id.event_time_panel,
@@ -179,15 +179,16 @@ open class F1WidgetProvider : AppWidgetProvider() {
             // winner_name_panel only exists in widget_wide.xml; compact ignores these calls.
             val rightColWDp = (contentWDp * 0.45f).toInt().coerceAtLeast(60)
             if (wide) {
-                val showWinner = todayResult != null && !liveNow
+                val showWinner = todayResult != null
                 views.setViewVisibility(R.id.winner_name_panel,
                     if (showWinner) View.VISIBLE else View.GONE)
-                if (showWinner) {
-                    val winAction = if (todayResult!!.sessionLabel == "GP") "WINS" else "POLE"
+                if (todayResult != null) {
+                    val winnerText = "${todayResult.driverCode} ${todayResult.action}"
+                    views.setContentDescription(R.id.winner_name_panel, winnerText)
                     views.setImageViewBitmap(
                         R.id.winner_name_panel,
                         TextPanelRenderer.centeredLine(
-                            "${todayResult.driverCode} $winAction",
+                            winnerText,
                             20f, palette.primary, ndot, rightColWDp
                         )
                     )
@@ -217,20 +218,18 @@ open class F1WidgetProvider : AppWidgetProvider() {
                     )
                 }
                 wide && todayResult != null -> {
-                    val action = if (todayResult.sessionLabel == "GP") "WINS" else "POLE"
                     val aspect = WidgetPanelGeometry.widePanelAspect(minWidthDp, maxHeightDp)
                     StandingsRenderer.renderResult(
                         (300 * aspect).toInt(), 300,
                         driverCode = todayResult.driverCode,
-                        action = action,
+                        action = todayResult.action,
                         typeface = ndot,
                         palette = palette
                     )
                 }
                 !wide && todayResult != null -> {
-                    val action = if (todayResult.sessionLabel == "GP") "WINS" else "POLE"
                     TextPanelRenderer.line(
-                        "${todayResult.driverCode} $action",
+                        "${todayResult.driverCode} ${todayResult.action}",
                         20f, palette.primary, ndot, contentWDp
                     )
                 }
@@ -272,6 +271,14 @@ open class F1WidgetProvider : AppWidgetProvider() {
                 }
             }
             views.setImageViewBitmap(R.id.info_panel, panel)
+            views.setContentDescription(R.id.info_panel, when {
+                liveNow -> "${DisplayFormat.countdownCaption(state)} live"
+                todayResult != null -> "${todayResult.driverCode} ${todayResult.action}"
+                entries.isNotEmpty() -> "Championship standings: " + entries.mapIndexed { index, entry ->
+                    "${index + 1}. ${entry.code}, ${entry.points} points"
+                }.take(if (wide) 6 else 3).joinToString("; ")
+                else -> "No standings available"
+            })
 
             val refreshIntent = Intent(context, F1WidgetProvider::class.java)
                 .setAction(ACTION_MANUAL_REFRESH)
