@@ -69,6 +69,10 @@ widget in **light mode**:
 |:---:|:---:|:---:|
 | ![Upcoming, light](docs/images/widget-wide-upcoming-light.png) | ![Live, light](docs/images/widget-wide-live-light.png) | ![Finished, light](docs/images/widget-wide-finished-light.png) |
 
+Each update supplies both light and dark images. The launcher selects the
+matching images when its theme changes, including after standby, without
+waiting for a background data refresh.
+
 Before the first data fetch (or if the schedule can't be loaded) the widget
 shows a **no-data** fallback — `NO DATA` with dot-matrix art:
 

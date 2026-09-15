@@ -40,8 +40,8 @@ Wide (4×2, ≥ 180dp):
 
 ## Light theme — ✅ done (wide)
 
-The widget picks `WidgetPalette.LIGHT`/`DARK` from the system UI mode, so shots
-differ by theme. Captured the wide set in light mode by toggling
+The widget supplies both `WidgetPalette.LIGHT` and `DARK` images, and the
+launcher selects them for its current theme. Captured the wide set in light mode by toggling
 `adb shell cmd uimode night no` (restore with `night yes`):
 
 - [x] `widget-wide-upcoming-light.png`
@@ -49,6 +49,13 @@ differ by theme. Captured the wide set in light mode by toggling
 - [x] `widget-wide-finished-light.png`
 
 Compact light variants can be added the same way if wanted.
+
+When checking theme changes, render the widget once, then toggle light → dark
+→ light without tapping refresh. The text and artwork must match the background
+at every step, including while the app process is absent (`adb shell am kill
+com.demetrius.f1glyph`). Restore the phone's original theme setting afterwards.
+`WidgetThemeTest` covers cached, parcelled views for both sizes and all four
+content states with `./gradlew testDebugUnitTest`.
 
 ## Edge state — ✅ done
 

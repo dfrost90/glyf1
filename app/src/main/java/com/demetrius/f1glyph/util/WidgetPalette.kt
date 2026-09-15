@@ -1,13 +1,10 @@
 package com.demetrius.f1glyph.util
 
-import android.content.Context
-import android.content.res.Configuration
-
 /**
  * Colors for the bitmap-rendered widget parts. XML views get theirs from
- * values/values-night resources; bitmaps are drawn in-process, so the
- * palette is picked from the current UI mode at render time. Must stay in
- * sync with colors.xml.
+ * values/values-night resources; bitmap panels are rendered in both palettes
+ * so the launcher can select the current theme without an app refresh.
+ * Must stay in sync with colors.xml.
  */
 data class WidgetPalette(
     val primary: Int,
@@ -36,11 +33,5 @@ data class WidgetPalette(
             dotDim = 0x3C000000,
             dotBright = 0xE6141414.toInt()
         )
-
-        fun of(context: Context): WidgetPalette {
-            val night = context.resources.configuration.uiMode and
-                Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-            return if (night) DARK else LIGHT
-        }
     }
 }

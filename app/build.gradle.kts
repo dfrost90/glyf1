@@ -24,8 +24,8 @@ android {
         // GlyphMatrixSDK.aar declares minSdk 33; all Glyph Matrix phones ship newer anyway.
         minSdk = 33
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
     }
 
     signingConfigs {
@@ -54,6 +54,10 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -75,4 +79,5 @@ dependencies {
     implementation(files("libs/GlyphMatrixSDK.aar"))
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16.1")
 }
