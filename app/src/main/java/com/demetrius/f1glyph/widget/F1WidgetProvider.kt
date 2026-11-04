@@ -60,6 +60,10 @@ open class F1WidgetProvider : AppWidgetProvider() {
         if (widgetIds(context).isEmpty()) RefreshWorker.cancelPeriodic(context)
     }
 
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        WidgetAppearance.delete(context, appWidgetIds)
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == ACTION_MANUAL_REFRESH) {
@@ -102,7 +106,7 @@ open class F1WidgetProvider : AppWidgetProvider() {
             ids.forEach { id -> awm.updateAppWidget(id, buildViews(context, awm, id, state)) }
         }
 
-        private fun buildViews(
+        internal fun buildViews(
             context: Context,
             awm: AppWidgetManager,
             appWidgetId: Int,
@@ -113,7 +117,8 @@ open class F1WidgetProvider : AppWidgetProvider() {
                 context,
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
-                rawState
+                rawState,
+                translucent = WidgetAppearance.isTranslucent(context, appWidgetId)
             )
         }
 
@@ -122,7 +127,8 @@ open class F1WidgetProvider : AppWidgetProvider() {
             minWidthDp: Int,
             maxHeightDp: Int,
             rawState: F1WidgetState,
-            now: Long = System.currentTimeMillis()
+            now: Long = System.currentTimeMillis(),
+            translucent: Boolean = false
         ): RemoteViews {
             // Resolve which session is live/next for the current clock, so a
             // just-finished session doesn't linger as "upcoming" until the next
@@ -133,6 +139,10 @@ open class F1WidgetProvider : AppWidgetProvider() {
                 context.packageName,
                 if (wide) R.layout.widget_wide else R.layout.widget_compact
             )
+            // Resolve the color when the launcher applies/reapplies the views.
+            // Reusing setBackgroundResource can retain the old theme's drawable.
+            views.setColorStateList(R.id.widget_root, "setBackgroundTintList",
+                if (translucent) R.color.widget_bg_translucent else R.color.widget_bg)
 
             val res = context.resources
             val ndot = res.getFont(R.font.ndot57)

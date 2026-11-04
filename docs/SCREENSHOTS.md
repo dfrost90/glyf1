@@ -22,9 +22,10 @@ Regenerate any time with `python3 tools/render_matrix.py`.
 ## Widget states — ✅ done
 
 The widget has exactly **three** content states per size — there is *no*
-distinct "countdown" widget state (the timer row only ever shows a date/time,
-`LIVE`, or `FINISHED`; the ticking countdown lives on the Glyph Matrix face,
-see the `matrix-*` shots above).
+distinct "countdown" widget layout. In the upcoming state, the timer row
+shows a date/time until the final ten minutes, then unsigned remaining
+minutes (`3M`, rounding up). It switches to `LIVE` at the scheduled start
+and `FINISHED` once a result is published.
 
 Compact (2×2, add at the smallest size):
 
@@ -56,6 +57,19 @@ at every step, including while the app process is absent (`adb shell am kill
 com.demetrius.f1glyph`). Restore the phone's original theme setting afterwards.
 `WidgetThemeTest` covers cached, parcelled views for both sizes and all four
 content states with `./gradlew testDebugUnitTest`.
+
+## Translucent appearance — device capture pending
+
+For each size, long-press the widget, open **Edit / configuration**, select
+**Translucent**, and save with **OK**. Check upcoming, live, finished, and
+no-data content against light and dark wallpapers; the wallpaper should be
+visible through the tinted background and the bitmap panels. Toggle system
+light/dark mode without refreshing and check both the background and content.
+Refresh, restart the app process, and confirm the chosen appearance persists.
+Switch one instance back to **Solid** and verify other instances retain their
+own selection. `WidgetThemeTest` covers cached/reapplied backgrounds and panels
+for both appearances; physical Nothing OS 5.0 launcher appearance remains a
+device check.
 
 ## Edge state — ✅ done
 

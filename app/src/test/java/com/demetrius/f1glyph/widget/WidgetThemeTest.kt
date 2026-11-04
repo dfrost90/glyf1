@@ -42,12 +42,24 @@ class WidgetThemeTest {
     @Test fun compactNoData() = checkCachedThemes(wide = false, state = empty)
     @Test fun wideNoData() = checkCachedThemes(wide = true, state = empty)
 
-    private fun checkCachedThemes(wide: Boolean, state: F1WidgetState) {
+    @Test fun compactTranslucent() {
+        for (state in listOf(upcoming(), live(), finished(), empty)) {
+            checkCachedThemes(wide = false, state = state, translucent = true)
+        }
+    }
+
+    @Test fun wideTranslucent() {
+        for (state in listOf(upcoming(), live(), finished(), empty)) {
+            checkCachedThemes(wide = true, state = state, translucent = true)
+        }
+    }
+
+    private fun checkCachedThemes(wide: Boolean, state: F1WidgetState, translucent: Boolean = false) {
         val context = RuntimeEnvironment.getApplication()
         // Build and parcel just once, as the widget service does before caching
         // RemoteViews. Theme changes below never call the provider or renderer.
         val cached = parcelCopy(F1WidgetProvider.buildViews(
-            context, if (wide) 320 else 160, 180, state, now
+            context, if (wide) 320 else 160, 180, state, now, translucent
         ))
         val root = cached.apply(context, FrameLayout(context))
         val palettes = listOf(WidgetPalette.LIGHT, WidgetPalette.DARK, WidgetPalette.LIGHT)
@@ -57,12 +69,16 @@ class WidgetThemeTest {
             )
             // Cover both launcher paths: reuse an existing view, or reinflate it.
             cached.reapply(context, root)
-            checkPanels(root, palette, wide, state)
-            checkPanels(cached.apply(context, FrameLayout(context)), palette, wide, state)
+            checkPanels(root, palette, wide, state, translucent)
+            checkPanels(cached.apply(context, FrameLayout(context)), palette, wide, state, translucent)
         }
     }
 
-    private fun checkPanels(root: View, palette: WidgetPalette, wide: Boolean, state: F1WidgetState) {
+    private fun checkPanels(root: View, palette: WidgetPalette, wide: Boolean, state: F1WidgetState,
+                            translucent: Boolean) {
+        val expectedColor = root.context.getColor(
+            if (translucent) R.color.widget_bg_translucent else R.color.widget_bg)
+        assertEquals(expectedColor, root.backgroundTintList!!.defaultColor)
         assertContainsColor(root, R.id.header_panel, palette.primary)
         assertContainsColor(root, R.id.caption_panel, palette.secondary)
         val live = state.weekend?.isSessionLiveNow == true

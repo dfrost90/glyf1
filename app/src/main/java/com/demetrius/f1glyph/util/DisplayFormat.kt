@@ -99,7 +99,7 @@ object DisplayFormat {
         SessionKind.RACE -> "RACE"
     }
 
-    /** Two short strings for the dot-matrix panel: e.g. ("QUALI", "VER") or ("RACE", "-2H14M") */
+    /** Two short strings for the dot-matrix panel: e.g. ("QUALI", "VER") */
     fun matrixPanelText(state: F1WidgetState): Pair<String, String> {
         val weekend = state.weekend
         val session = weekend?.nextSession
@@ -110,21 +110,21 @@ object DisplayFormat {
         return top to bottom
     }
 
-    /** Very short relative time for the Glyph Matrix, e.g. "-2D5H", "-3H12M", "-42M", "LIVE". */
+    /** Very short relative time for the Glyph Matrix, e.g. "2D5H", "3H12M", "42M", "LIVE". */
     fun compactCountdown(state: F1WidgetState, nowMillis: Long): String {
         val weekend = state.weekend ?: return "--"
         if (weekend.isSessionLiveNow) return "LIVE"
         val session = weekend.nextSession ?: return "--"
         val delta = session.epochMillis - nowMillis
         if (delta <= 0) return "NOW"
-        val totalMinutes = delta / 60_000
+        val totalMinutes = (delta + 59_999) / 60_000
         val days = totalMinutes / (60 * 24)
         val hours = (totalMinutes % (60 * 24)) / 60
         val minutes = totalMinutes % 60
         return when {
-            days > 0 -> "-${days}D${hours}H"
-            hours > 0 -> "-${hours}H${minutes}M"
-            else -> "-${minutes}M"
+            days > 0 -> "${days}D${hours}H"
+            hours > 0 -> "${hours}H${minutes}M"
+            else -> "${minutes}M"
         }
     }
 
@@ -150,12 +150,12 @@ object DisplayFormat {
 
     /**
      * Countdown for the widget timer row inside the final minutes before a
-     * session, e.g. "-9M". Ceiling, so a tick that runs late still shows the
+     * session, e.g. "9M". Ceiling, so a tick that runs late still shows the
      * minute that is actually left.
      */
     fun countdownCompact(startMillis: Long, nowMillis: Long): String {
         val minutes = ((startMillis - nowMillis + 59_999) / 60_000).coerceAtLeast(0)
-        return "-${minutes}M"
+        return if (minutes == 0L) "NOW" else "${minutes}M"
     }
 
     /** Elapsed session time for the live timer row, e.g. "+1H12M" / "+42M". */

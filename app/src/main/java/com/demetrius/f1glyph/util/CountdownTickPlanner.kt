@@ -2,7 +2,7 @@ package com.demetrius.f1glyph.util
 
 /**
  * Decides when the widget needs its next off-schedule re-render so the
- * pre-session countdown ("-9M", Ndot bitmap — can't tick natively) counts
+ * pre-session countdown ("9M", Ndot bitmap — can't tick natively) counts
  * down by the minute. Pure logic; CountdownTickWorker executes it.
  */
 object CountdownTickPlanner {

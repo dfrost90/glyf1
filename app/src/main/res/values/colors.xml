@@ -2,6 +2,7 @@
 <resources>
     <!-- Light theme (default); dark lives in values-night/ -->
     <color name="widget_bg">#EDECEA</color>
+    <color name="widget_bg_translucent">#CCEDECEA</color>
     <color name="f1_white">#141414</color>
     <color name="f1_grey">#6E6E6E</color>
     <color name="f1_red">#D50000</color>
