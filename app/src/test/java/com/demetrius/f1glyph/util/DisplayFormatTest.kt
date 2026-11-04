@@ -66,19 +66,19 @@ class DisplayFormatTest {
     fun `compact countdown in days`() {
         val now = 0L
         val epoch = (2 * 24 * 60 + 5 * 60) * 60_000L // 2d 5h ahead
-        assertEquals("-2D5H", DisplayFormat.compactCountdown(state(sessionEpoch = epoch), now))
+        assertEquals("2D5H", DisplayFormat.compactCountdown(state(sessionEpoch = epoch), now))
     }
 
     @Test
     fun `compact countdown in hours`() {
         val now = 0L
         val epoch = (3 * 60 + 12) * 60_000L // 3h12m ahead
-        assertEquals("-3H12M", DisplayFormat.compactCountdown(state(sessionEpoch = epoch), now))
+        assertEquals("3H12M", DisplayFormat.compactCountdown(state(sessionEpoch = epoch), now))
     }
 
     @Test
     fun `compact countdown in minutes`() {
-        assertEquals("-42M", DisplayFormat.compactCountdown(state(sessionEpoch = 42 * 60_000L), 0L))
+        assertEquals("42M", DisplayFormat.compactCountdown(state(sessionEpoch = 42 * 60_000L), 0L))
     }
 
     @Test
@@ -160,10 +160,29 @@ class DisplayFormatTest {
     @Test
     fun `countdown shows minutes left, rounding up`() {
         val start = 100 * 60_000L
-        assertEquals("-10M", DisplayFormat.countdownCompact(start, start - 10 * 60_000L))
-        assertEquals("-10M", DisplayFormat.countdownCompact(start, start - 9 * 60_000L - 30_000L))
-        assertEquals("-9M", DisplayFormat.countdownCompact(start, start - 9 * 60_000L))
-        assertEquals("-1M", DisplayFormat.countdownCompact(start, start - 20_000L))
-        assertEquals("-0M", DisplayFormat.countdownCompact(start, start))
+        assertEquals("10M", DisplayFormat.countdownCompact(start, start - 10 * 60_000L))
+        assertEquals("10M", DisplayFormat.countdownCompact(start, start - 9 * 60_000L - 30_000L))
+        assertEquals("9M", DisplayFormat.countdownCompact(start, start - 9 * 60_000L))
+        assertEquals("1M", DisplayFormat.countdownCompact(start, start - 20_000L))
+        assertEquals("1M", DisplayFormat.countdownCompact(start, start - 1L))
+        assertEquals("NOW", DisplayFormat.countdownCompact(start, start))
+        assertEquals("NOW", DisplayFormat.countdownCompact(start, start + 3 * 60_000L))
     }
+
+    @Test
+    fun `widget countdown becomes live at start even with a stale cache`() {
+        val start = 100 * 60_000L
+        val raw = state(sessionEpoch = start)
+        for ((offset, expected) in listOf(-180_000L to "3M", -1L to "1M", 0L to "LIVE", 180_000L to "LIVE")) {
+            val now = start + offset
+            assertEquals(expected, DisplayFormat.widgetTimer(raw.resolvedAt(now), now))
+        }
+    }
+
+    @Test
+    fun `compact countdown rounds the final partial minute up`() {
+        assertEquals("1M", DisplayFormat.compactCountdown(state(sessionEpoch = 59_999L), 0L))
+        assertEquals("1M", DisplayFormat.compactCountdown(state(sessionEpoch = 1L), 0L))
+    }
+
 }

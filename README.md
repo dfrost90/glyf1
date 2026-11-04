@@ -50,6 +50,10 @@ best-effort and may be delayed by Android battery management. Results expire
 at midnight UTC and give way to a later live session. Bitmap panels include
 text descriptions for screen readers.
 
+Remaining time is unsigned (`3M` means three minutes until the scheduled
+start), rounding partial minutes up. At the scheduled start the widget shows
+`LIVE`; this is schedule-derived, so race delays are not detected.
+
 **Wide (4×2):**
 
 | Upcoming | Live | Finished |
@@ -72,6 +76,13 @@ widget in **light mode**:
 Each update supplies both light and dark images. The launcher selects the
 matching images when its theme changes, including after standby, without
 waiting for a background data refresh.
+
+For a translucent background to complement Nothing OS 5.0, long-press the
+widget and open the launcher's **Edit / configuration** action, then select
+**Translucent** and **OK**. Each widget saves its own choice; **Solid** remains
+the default. Both appearances follow light/dark mode. Translucency uses an
+80% opaque tint over the wallpaper; native launcher blur and automatic
+wallpaper tinting are not provided.
 
 Before the first data fetch (or if the schedule can't be loaded) the widget
 shows a **no-data** fallback — `NO DATA` with dot-matrix art:

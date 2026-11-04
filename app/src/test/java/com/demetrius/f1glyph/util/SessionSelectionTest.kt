@@ -127,7 +127,7 @@ class SessionSelectionTest {
     @Test
     fun `widget counts down through final ten minutes and switches to live`() {
         val state = stateWith(fp1, live = false)
-        for ((remaining, label) in listOf(600_000L to "-10M", 60_001L to "-2M", 1L to "-1M")) {
+        for ((remaining, label) in listOf(600_000L to "10M", 60_001L to "2M", 1L to "1M")) {
             val now = fp1.epochMillis - remaining
             assertEquals(label, DisplayFormat.widgetTimer(state.resolvedAt(now), now))
         }
