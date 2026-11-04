@@ -60,6 +60,13 @@ content states with `./gradlew testDebugUnitTest`.
 
 ## Translucent appearance — device capture pending
 
+On 2026-11-04, a release-signed build was installed over the existing app on
+Nothing Phone (4a), Nothing OS 5.0 / Android 17. The compact widget's translucent
+background was visually checked on the home screen, and its selection persisted
+after restarting the app process. Wide-widget and physical light/dark switching
+checks remain pending. This appearance provides alpha transparency, not native
+Nothing frosted blur.
+
 For each size, long-press the widget, open **Edit / configuration**, select
 **Translucent**, and save with **OK**. Check upcoming, live, finished, and
 no-data content against light and dark wallpapers; the wallpaper should be
